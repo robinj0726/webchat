@@ -1,6 +1,6 @@
 const Koa = require('koa');
 const app = new Koa();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
