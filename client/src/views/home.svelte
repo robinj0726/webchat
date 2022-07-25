@@ -3,15 +3,27 @@
 
     import Textfield from '@smui/textfield';
     import Button from '@smui/button';
+    import TopAppBar, { Row, Section, Title } from '@smui/top-app-bar';
 
     const navigate = useNavigate();
+    
     let roomNo = '';
     let userName = '';
 
 </script>
 
 <main>
-    <div>
+    <TopAppBar
+      variant="static"
+      dense={false}
+      color='secondary'>
+        <Row>
+            <div style="margin-top: 1rem;">
+                <Title>Web Meeting Demo</Title>
+            </div>
+        </Row>    
+    </TopAppBar>
+    <div style="margin-top:10rem;">
       <Textfield 
         style="width: 30%;"
         bind:value={roomNo} 
@@ -32,7 +44,7 @@
 
 <style>
     main {
-      margin-top: 15rem;
+      margin: 0;
       padding: 0;
       text-align: center;
     }

@@ -1,9 +1,7 @@
 <script>
-
   import { Router, Route } from "svelte-navigator";
   import Home from "./views/home.svelte";
 	import VideoCall from "./views/videocall.svelte";
-
 
 </script>
 
