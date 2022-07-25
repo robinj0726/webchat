@@ -1,35 +1,19 @@
 <script>
-  import Textfield from '@smui/textfield';
-  import Button from '@smui/button';
 
-  let roomNo = '';
-  let userName = '';
+  import { Router, Route } from "svelte-navigator";
+  import Home from "./views/home.svelte";
+	import VideoCall from "./views/videocall.svelte";
+
+
 </script>
 
-<main>
-  <div>
-    <Textfield 
-      style="width: 30%;"
-      bind:value={roomNo} 
-      label="Room Number:">
-    </Textfield>
-  </div>
-  <div>
-    <Textfield 
-      style="width: 30%;"
-      bind:value={userName} 
-      label="Nick Name:">
-    </Textfield>
-  </div>
-  <div style="margin: 1rem;">
-    <Button variant="unelevated">Join Meeting</Button>
-  </div>  
-</main>
+<Router>
+	<Route path="videocall">
+		<VideoCall />
+	</Route>
 
-<style>
-  main {
-    margin-top: 15rem;
-    padding: 0;
-    text-align: center;
-  }
-</style>
+  <Route path="/">
+    <Home />
+  </Route>
+</Router>
+
