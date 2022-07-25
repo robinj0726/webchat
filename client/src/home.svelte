@@ -5,11 +5,17 @@
     import Button from '@smui/button';
     import TopAppBar, { Row, Section, Title } from '@smui/top-app-bar';
 
+    import { onMount } from 'svelte';
+    import { newCallController } from './util/newCallController.js';
+
     const navigate = useNavigate();
     
     let roomNo = '';
     let userName = '';
 
+    onMount(async ()=>{
+      newCallController("2022", {});
+    }); 
 </script>
 
 <main>
