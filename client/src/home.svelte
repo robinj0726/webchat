@@ -6,7 +6,7 @@
     import TopAppBar, { Row, Section, Title } from '@smui/top-app-bar';
 
     import { onMount } from 'svelte';
-    import { newCallController } from './util/newCallController.js';
+    import { NewCallController, NewVideoCall } from './util/callController.js';
 
     const navigate = useNavigate();
     
@@ -14,8 +14,19 @@
     let userName = '';
 
     onMount(async ()=>{
-      newCallController("2022", {});
+      NewCallController();
     }); 
+
+    function JoinRoom() {
+      NewVideoCall(
+        roomNo, 
+        (response) => {
+          if (response.status == 'ok') {
+            navigate('videocall')
+          }
+        }
+      )
+    }
 </script>
 
 <main>
@@ -44,7 +55,7 @@
       </Textfield>
     </div>
     <div style="margin: 1rem;">
-      <Button variant="unelevated" on:click="{() => navigate('videocall')}">Join Meeting</Button>
+      <Button variant="unelevated" on:click="{ JoinRoom }">Join Meeting</Button>
     </div>  
 </main>
 

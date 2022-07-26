@@ -30,18 +30,13 @@ if(callerState.video) {
   });
 }
 
-export async function newCallController(roomNo, options = {}) {
-  room = roomNo;
+export async function NewCallController() {
 
-  if(options.turnServerConfig) {
-    configuration.iceServers = options.turnServerConfig.iceServers;
-  }
+  // if(options.turnServerConfig) {
+  //   configuration.iceServers = options.turnServerConfig.iceServers;
+  // }
 
-  socket = io.connect();
-  console.log(socket)
-
-  console.log("creating or joining room: " + room);
-  socket.emit(socketActions.createOrJoin, room);
+  socket = io.connect();;
 
   socket.on(socketActions.created, (room)=>{
     console.log("room created");
@@ -56,12 +51,12 @@ export async function newCallController(roomNo, options = {}) {
     console.log("someone joined the room");
   });
 
-  socket.on(socketActions.joined, (room)=>{
-    console.log(socket)
-    console.log("someone joined the room");
-  });
-
   // startWebRTC(true);
+}
+
+export function NewVideoCall(room, callback) {
+  console.log("creating or joining room: " + room);
+  socket.emit(socketActions.createOrJoin, room, callback);
 }
 
 export function startWebRTC(isOfferer) {
