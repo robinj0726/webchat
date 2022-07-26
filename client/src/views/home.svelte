@@ -6,7 +6,7 @@
     import TopAppBar, { Row, Section, Title } from '@smui/top-app-bar';
 
     import { onMount } from 'svelte';
-    import { NewCallController, NewVideoCall } from './util/callController.js';
+    import { NewCallController, NewVideoCall } from '../util/callController.js';
 
     const navigate = useNavigate();
     

@@ -59,7 +59,7 @@ export function NewVideoCall(room, callback) {
   socket.emit(socketActions.createOrJoin, room, callback);
 }
 
-export function startWebRTC(isOfferer) {
+export function StartWebRTC(isOfferer) {
   peerConnection = new RTCPeerConnection(configuration);
   // 'onicecandidate' notifies us whenever an ICE agent needs to deliver a
   // message to the other peer through the signaling server
