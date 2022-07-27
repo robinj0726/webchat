@@ -35,7 +35,12 @@ io.on(socketActions.connection, (socket) => {
         callback({
             status: "ok"
         });
-      });
+    });
+
+    socket.on(socketActions.message, (details) => {
+        socket.broadcast.to(details.room).emit(socketActions.message, details);
+    });
+  
 });
 
 server.listen(port, () => {
