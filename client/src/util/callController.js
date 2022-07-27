@@ -32,10 +32,6 @@ if(callerState.video) {
 
 export async function NewCallController() {
 
-  // if(options.turnServerConfig) {
-  //   configuration.iceServers = options.turnServerConfig.iceServers;
-  // }
-
   socket = io.connect();;
 
   socket.on(socketActions.created, (room)=>{
@@ -51,7 +47,6 @@ export async function NewCallController() {
     console.log("someone joined the room");
   });
 
-  // startWebRTC(true);
 }
 
 export function NewVideoCall(room, callback) {
@@ -65,6 +60,7 @@ export function StartWebRTC(isOfferer) {
   // message to the other peer through the signaling server
   peerConnection.onicecandidate = event => {
     if (event.candidate) {
+      console.log(event.candidate);
       sendMessage({'candidate': event.candidate});
     }
   };
