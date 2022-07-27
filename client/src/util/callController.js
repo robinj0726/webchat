@@ -49,7 +49,9 @@ export async function NewCallController() {
 
 }
 
-export function NewVideoCall(room, callback) {
+export function NewVideoCall(roomNo, callback) {
+  room = roomNo;
+
   console.log("creating or joining room: " + room);
   socket.emit(socketActions.createOrJoin, room, callback);
 }
@@ -60,7 +62,7 @@ export function StartWebRTC(isOfferer) {
   // message to the other peer through the signaling server
   peerConnection.onicecandidate = event => {
     if (event.candidate) {
-      sendMessage({'candidate': event.candidate});
+      sendMessage({'ice': event.candidate});
     }
   };
 
@@ -99,6 +101,7 @@ export function StartWebRTC(isOfferer) {
   }, onError);
 
   socket.on('message', (message, client) => {
+    console.log('recv: ' + message);
     if (message.sdp) {
       // This is called after receiving an offer or answer from another peer
       peerConnection.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
@@ -107,11 +110,15 @@ export function StartWebRTC(isOfferer) {
           peerConnection.createAnswer().then(localDescCreated).catch(onError);
         }
       }, onError);
-    } else if (message.candidate) {
+    } else if (message.ice) {
       // Add the new ICE candidate to our connections remote description
-      peerConnection.addIceCandidate(
-        new RTCIceCandidate(message.candidate), onSuccess, onError
-      );
+      peerConnection.addIceCandidate(message.ice)
+      .then(()=>{
+        console.log('Added Ice Candidate: ' + message.ice)
+      })
+      .catch(err=>{
+        console.log("Failure during addIceCandidate(): " + err.name)
+      });
     }
   });
 }
