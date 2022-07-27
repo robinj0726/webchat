@@ -7,40 +7,57 @@ app.use(serve(__dirname + '/../client/dist/'));
 
 const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
+const clients = {};
 
-const socketActions = {
-    connection: 'connection',
-    disconnect: 'disconnect',
-    createOrJoin: "create or join",
-    created: "created",
-    join: "join",
-    joined: "joined",
-    message: "message",
-    data: "data",
-};
-
-io.on(socketActions.connection, (socket) => {
+io.on('connection', (socket) => {
     console.log(`${socket.id} connected`);
-    socket.on(socketActions.disconnect, () => {
+    socket.on('disconnect', () => {
         console.log(`${socket.id} disconnect`);
+        socket.leave();
+
+        const roomId = clients[socket.id].roomId;
+
+        const room = io.sockets.adapter.rooms.get(roomId);
+        if (room) {
+            console.log(`total users ${room.size} in ${roomId}`);
+
+            socket.broadcast.to(roomId).emit('user:leave', socket.id)    
+        } else {
+            console.log(`room ${roomId} is empty`);
+        }
+        
+        delete clients[socket.id];
     });
 
-    socket.on(socketActions.createOrJoin, (room, callback) => {
-        console.log(`${socket.id} joined ${room}`);
-        socket.join(room);
+    socket.on('user:join', (roomId, callback) => {
+        console.log(`${socket.id} joined ${roomId}`);
+        clients[socket.id] = {
+            roomId
+        };
 
-        numberClients = io.sockets.adapter.rooms.get(room).size;
-        console.log(numberClients)
+        socket.join(roomId);
+        socket.broadcast.to(roomId).emit('user:join', socket.id);
+
+        const numClients = io.sockets.adapter.rooms.get(roomId).size;
+        console.log(`total users ${numClients} in ${roomId}`);
 
         callback({
             status: "ok"
         });
     });
 
-    socket.on(socketActions.message, (details) => {
-        socket.broadcast.to(details.room).emit(socketActions.message, details);
+    socket.on('user:rtc:offer', ({ id, offer }) => {
+        io.to(id).emit('user:rtc:offer', { id: socket.id, offer })
     });
-  
+    
+    socket.on('user:rtc:answer', ({ id, answer }) => {
+        io.to(id).emit('user:rtc:answer', { id: socket.id, answer })
+    });
+
+    socket.on('user:rtc:candidate', ({ id, candidate }) => {
+        io.to(id).emit('user:rtc:candidate', { id: socket.id, candidate })
+    });
+
 });
 
 server.listen(port, () => {
