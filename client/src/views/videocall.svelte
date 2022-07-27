@@ -1,17 +1,24 @@
 <script>
     import { onMount } from 'svelte';
     
-    import { StartWebRTC } from '../util/callController.js';
+    import { OpenLocalMedia } from '../util/callController.js';
 
     onMount(async ()=>{
-        StartWebRTC(true);
+        OpenLocalMedia({
+            audio: true,
+            video: true    
+        });
     }); 
 
 </script>
 
 <main id="video-container">
     <h1>Video Call</h1>
-    <video class="full-screen-video" id="localVideo" autoplay playsinline></video>
-    <video class="secondary-video" id="remoteVideo" autoplay playsinline></video>
+    <video class="full-screen-video" id="localVideo" autoplay playsinline>
+        <track kind="captions" />
+    </video>
+    <video class="secondary-video" id="remoteVideo" autoplay playsinline>
+        <track kind="captions" />
+    </video>
 </main>
   
