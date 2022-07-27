@@ -5,7 +5,8 @@ import callerState from "../store/callerState";
 
 let configuration = {
   iceServers: [{
-    urls: 'stun:stun.l.google.com:19302'
+    // urls: 'stun:stun.l.google.com:19302'
+    urls: "stun:openrelay.metered.ca:80"
   }]
 };
 
@@ -43,7 +44,6 @@ export async function NewCallController() {
   });
 
   socket.on(socketActions.joined, (room)=>{
-    console.log(socket)
     console.log("someone joined the room");
   });
 
@@ -60,7 +60,6 @@ export function StartWebRTC(isOfferer) {
   // message to the other peer through the signaling server
   peerConnection.onicecandidate = event => {
     if (event.candidate) {
-      console.log(event.candidate);
       sendMessage({'candidate': event.candidate});
     }
   };

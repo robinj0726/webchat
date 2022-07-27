@@ -5,7 +5,7 @@
 
 </script>
 
-<Router>
+<Router primary={false}>
 	<Route path="videocall">
 		<VideoCall />
 	</Route>
