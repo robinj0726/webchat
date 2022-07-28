@@ -22,6 +22,7 @@
         roomNo, 
         (response) => {
           if (response.status == 'ok') {
+            console.log(`my id: ${response.id}`)
             navigate('videocall')
           }
         }

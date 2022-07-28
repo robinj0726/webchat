@@ -36,10 +36,23 @@ export function NewCallController() {
   socket.open();
   
   // when a user joins the server
-  socket.on('user:join', initRtcConnection);
+  socket.on('user:join', id => {
+    console.log(`user ${id} joined`);
+  });
 
   // when a user leaves
-  socket.on('user:leave', removeRtcConnection);
+  socket.on('user:leave', id => {
+    console.log(`user ${id} left`);
+  });
+  
+  socket.on('user:rtc:ready', id => {
+    console.log(`user ${id} rtc is ready`);
+    socket.emit('user:rtc:start', id);
+  });
+
+  socket.on('user:rtc:start', startRtcConnection);
+
+  socket.on('user:rtc:stop', stopRtcConnection);
 
   // when new user sent an answer 
   socket.on('user:rtc:answer', onRtcAnswer)
@@ -106,8 +119,7 @@ const onRtcIceCandidate = async ({ id, candidate }) => {
 
 }
 
-const initRtcConnection = async id => {
-  console.log(`user ${id} joined`);
+const startRtcConnection = async id => {
 
   const pc = new RTCPeerConnection(configuration);
 
@@ -135,8 +147,7 @@ const initRtcConnection = async id => {
 
 };
 
-const removeRtcConnection = id => {
-  console.log(`user ${id} left`);
+const stopRtcConnection = id => {
 
   const pc = peers[id]
 
@@ -188,6 +199,8 @@ export function OpenLocalMedia(options) {
     const localVideo = document.getElementById('localVideo');
     localVideo.srcObject = stream;
     localVideo.muted = true;
+
+    socket.emit('user:rtc:ready', room);
   })
   .catch(err => console.log(err))
 }
