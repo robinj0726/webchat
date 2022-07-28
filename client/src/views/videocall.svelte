@@ -5,7 +5,7 @@
 
     onMount(async ()=>{
         OpenLocalMedia({
-            audio: true,
+            audio: false,
             video: true    
         });
     }); 
