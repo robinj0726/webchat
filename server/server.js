@@ -53,8 +53,21 @@ io.on('connection', (socket) => {
         console.log(`total users ${numClients} in ${roomId}`);
 
         callback({
+            id: socket.id,
             status: "ok"
         });
+    });
+
+    socket.on('user:rtc:ready', roomId => {
+        socket.broadcast.to(roomId).emit('user:rtc:ready', socket.id);
+    });
+
+    socket.on('user:rtc:start', id => {
+        io.to(id).emit('user:rtc:start', socket.id);
+    });
+
+    socket.on('user:rtc:stop', id => {
+        io.to(id).emit('user:rtc:stop', socket.id);
     });
 
     socket.on('user:rtc:offer', ({ id, offer }) => {
