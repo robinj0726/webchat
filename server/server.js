@@ -8,7 +8,13 @@ const koaHistorify = require('koa-historify')
 app.use(serve(__dirname + '/../client/dist/'));
 app.use(koaHistorify(__dirname + '/../client/dist/index.html'));
 
-const server = require('http').createServer(app.callback());
+const fs = require('fs');
+const httpsOptions = {
+    key: fs.readFileSync('./localhost.key', 'utf8'),
+    cert: fs.readFileSync('./localhost.crt', 'utf8')
+};
+
+const server = require('https').createServer(httpsOptions, app.callback());
 const io = require('socket.io')(server);
 const clients = {};
 
@@ -18,15 +24,17 @@ io.on('connection', (socket) => {
         console.log(`${socket.id} disconnect`);
         socket.leave();
 
-        const roomId = clients[socket.id].roomId;
+        const client = clients[socket.id];
+        if (!client) return;
+        
 
-        const room = io.sockets.adapter.rooms.get(roomId);
+        const room = io.sockets.adapter.rooms.get(client.roomId);
         if (room) {
-            console.log(`total users ${room.size} in ${roomId}`);
+            console.log(`total users ${room.size} in ${client.roomId}`);
 
-            socket.broadcast.to(roomId).emit('user:leave', socket.id)    
+            socket.broadcast.to(client.roomId).emit('user:leave', socket.id)    
         } else {
-            console.log(`room ${roomId} is empty`);
+            console.log(`room ${client.roomId} is empty`);
         }
         
         delete clients[socket.id];
@@ -35,7 +43,7 @@ io.on('connection', (socket) => {
     socket.on('user:join', (roomId, callback) => {
         console.log(`${socket.id} joined ${roomId}`);
         clients[socket.id] = {
-            roomId
+            'roomId': roomId
         };
 
         socket.join(roomId);
