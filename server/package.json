@@ -5,6 +5,7 @@
   "main": "server.js",
   "dependencies": {
     "koa": "^2.13.4",
+    "koa-historify": "^1.0.0",
     "koa-static": "^5.0.0",
     "socket.io": "^4.5.1"
   },

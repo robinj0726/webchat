@@ -3,7 +3,10 @@ const app = new Koa();
 const serve = require('koa-static');
 const port = process.env.PORT || 4000;
 
+const koaHistorify = require('koa-historify')
+
 app.use(serve(__dirname + '/../client/dist/'));
+app.use(koaHistorify(__dirname + '/../client/dist/index.html'));
 
 const server = require('http').createServer(app.callback());
 const io = require('socket.io')(server);
