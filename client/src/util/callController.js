@@ -3,16 +3,17 @@
 import io from 'socket.io-client';
 import callerState from "../store/callerState";
 
-let configuration = {
+const configuration = {
   iceServers: [{
     // urls: 'stun:stun.l.google.com:19302'
     urls: "stun:openrelay.metered.ca:80"
   }]
 };
 
+const socket = io({ autoConnect: false })
+const peers = {}
+
 let localStream;
-let socket;
-let peerConnection;
 let room;
 
 if(callerState.audio) {
@@ -31,127 +32,162 @@ if(callerState.video) {
   });
 }
 
-export async function NewCallController() {
+export function NewCallController() {
+  socket.open();
+  
+  // when a user joins the server
+  socket.on('user:join', initRtcConnection);
 
-  socket = io.connect();;
+  // when a user leaves
+  socket.on('user:leave', removeRtcConnection);
 
-  socket.on(socketActions.created, (room)=>{
-    console.log("room created");
-  });
+  // when new user sent an answer 
+  socket.on('user:rtc:answer', onRtcAnswer)
+  
+  // when a user gets an offer
+  socket.on('user:rtc:offer', onRtcOffer)
+ 
+  // when a candidate arrives
+  socket.on('user:rtc:candidate', onRtcIceCandidate)
+}
 
-  socket.on(socketActions.join, (room)=>{
-    console.log("attempting to join");
-  });
+const onRtcOffer = async ({ id, offer }) => {
 
-  socket.on(socketActions.joined, (room)=>{
-    console.log("someone joined the room");
-  });
+  console.log(`got offer from ${id}`, offer)
+
+  if (!offer) return
+
+  const pc = new RTCPeerConnection(configuration)
+
+  addLocalStream(pc)
+
+  pc.ontrack = addRemoteStream;
+  pc.onicecandidate = sendIceCandidate(id)
+  
+  peers[id] = pc 
+
+  const desc = new RTCSessionDescription(offer)
+
+  pc.setRemoteDescription(desc)
+
+  const answer = await pc.createAnswer()
+
+  await pc.setLocalDescription(answer)
+
+  socket.emit('user:rtc:answer', { id, answer })
+}
+
+const onRtcAnswer = async ({ id, answer }) => {
+
+  console.log(`got answer from ${id}`, answer)
+
+  const pc = peers[id]
+
+  if (!pc) return 
+
+  if (!answer) return
+
+  const desc = new RTCSessionDescription(answer)
+
+  await pc.setRemoteDescription(desc)
+}
+
+const onRtcIceCandidate = async ({ id, candidate }) => {
+
+  console.log(`got ice candidate from ${id}`, candidate)
+
+  if (!candidate) return
+
+  const pc = peers[id]
+
+  if (!pc) return
+
+  await pc.addIceCandidate(candidate)
 
 }
+
+const initRtcConnection = async id => {
+  console.log(`user ${id} joined`);
+
+  const pc = new RTCPeerConnection(configuration);
+
+  // add peerconnection to peerlist
+  peers[id] = pc;
+
+  addLocalStream(pc);
+
+  pc.ontrack = addRemoteStream;
+  pc.onicecandidate = sendIceCandidate(id);
+  pc.onnegotiationneeded = async () =>  {
+    // create a new offer
+    const offer = await pc.createOffer();
+
+    // set offer as local descrioption
+    await pc.setLocalDescription(offer);
+
+    // send offer out
+    socket.emit('user:rtc:offer', { id, offer })
+
+    // log
+    console.log(`init new rtc peer connection for client ${id}`, offer)
+  
+  };
+
+};
+
+const removeRtcConnection = id => {
+  console.log(`user ${id} left`);
+
+  const pc = peers[id]
+
+  if (!pc) return
+
+  pc.close()
+
+  delete peers[id]
+
+  console.log(`removed rtc peer connection ${id}`)
+} 
+
+const sendIceCandidate = id => ({ candidate }) => {
+  if (candidate) {
+    socket.emit('user:rtc:candidate', { id, candidate });
+  }
+}
+
+const addLocalStream = pc => {
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream))
+} 
+
+const addRemoteStream = evt => {
+  const stream = evt.streams[0];
+  const localVideo = document.getElementById('localVideo');
+  const remoteVideo = document.getElementById('remoteVideo');
+  if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
+    localVideo.classList.toggle("full-screen-video");
+    localVideo.classList.toggle("secondary-video");
+    remoteVideo.classList.toggle("full-screen-video");
+    remoteVideo.classList.toggle("secondary-video");
+    remoteVideo.srcObject = stream;
+  }
+}
+
 
 export function NewVideoCall(roomNo, callback) {
   room = roomNo;
 
   console.log("creating or joining room: " + room);
-  socket.emit(socketActions.createOrJoin, room, callback);
+  socket.emit('user:join', room, callback);
 }
 
-export function StartWebRTC(isOfferer) {
-  peerConnection = new RTCPeerConnection(configuration);
-  // 'onicecandidate' notifies us whenever an ICE agent needs to deliver a
-  // message to the other peer through the signaling server
-  peerConnection.onicecandidate = event => {
-    if (event.candidate) {
-      sendMessage({'ice': event.candidate});
-    }
-  };
-
-  // If user is offerer let the 'negotiationneeded' event create the offer
-  if (isOfferer) {
-    peerConnection.onnegotiationneeded = () => {
-      peerConnection.createOffer().then(localDescCreated).catch(onError);
-    }
-  }
-
-  // When a remote stream arrives display it in the #remoteVideo element
-  peerConnection.ontrack = event => {
-    const stream = event.streams[0];
-    if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
-      const remoteVideo = document.getElementById('remoteVideo');
-      const localVideo = document.getElementById('localVideo');
-      localVideo.classList.toggle("full-screen-video");
-      localVideo.classList.toggle("secondary-video");
-      remoteVideo.classList.toggle("full-screen-video");
-      remoteVideo.classList.toggle("secondary-video");
-      remoteVideo.srcObject = stream;
-    }
-  };
-
-  navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true,
-  }).then(stream => {
+export function OpenLocalMedia(options) {
+  navigator.mediaDevices.getUserMedia({...options})
+  .then(stream => {
     localStream = stream;
     // Display your local video in #localVideo element
-    const localVideo = document.getElementById('localVideo')
+    const localVideo = document.getElementById('localVideo');
     localVideo.srcObject = stream;
     localVideo.muted = true;
-    // Add your stream to be sent to the conneting peer
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-  }, onError);
-
-  socket.on('message', (message, client) => {
-    console.log('recv: ' + message);
-    if (message.sdp) {
-      // This is called after receiving an offer or answer from another peer
-      peerConnection.setRemoteDescription(new RTCSessionDescription(message.sdp), () => {
-        // When receiving an offer lets answer it
-        if (peerConnection.remoteDescription.type === 'offer') {
-          peerConnection.createAnswer().then(localDescCreated).catch(onError);
-        }
-      }, onError);
-    } else if (message.ice) {
-      // Add the new ICE candidate to our connections remote description
-      peerConnection.addIceCandidate(message.ice)
-      .then(()=>{
-        console.log('Added Ice Candidate: ' + message.ice)
-      })
-      .catch(err=>{
-        console.log("Failure during addIceCandidate(): " + err.name)
-      });
-    }
-  });
+  })
+  .catch(err => console.log(err))
 }
-
-function localDescCreated(desc) {
-  peerConnection.setLocalDescription(
-    desc,
-    () => sendMessage({'sdp': peerConnection.localDescription}),
-    onError
-  );
-}
-
-function onError(err) {
-  console.log(err);
-}
-function onSuccess() {};
-
-export function sendMessage(message) {
-  console.log(socket.id)
-  message.room = room;
-  socket.emit(
-    socketActions.message,
-    message,
-  );
-}
-
-export const socketActions = {
-  connection: 'connection',
-  disconnect: 'disconnect',
-  createOrJoin: "create or join",
-  created: "created",
-  join: "join",
-  joined: "joined",
-  message: "message",
-  data: "data",
-};
