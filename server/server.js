@@ -54,10 +54,12 @@ io.on('connection', (socket) => {
         const numClients = io.sockets.adapter.rooms.get(roomId).size;
         console.log(`total users ${numClients} in ${roomId}`);
 
-        callback({
-            id: socket.id,
-            status: "ok"
-        });
+        if (callback) {
+            callback({
+                id: socket.id,
+                status: "ok"
+            });    
+        }
     });
 
     socket.on('user:rtc:ready', roomId => {
