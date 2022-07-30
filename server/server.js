@@ -15,7 +15,9 @@ const httpsOptions = {
 };
 
 const server = require('https').createServer(httpsOptions, app.callback());
-const io = require('socket.io')(server);
+const io = require('socket.io')(server, {
+    allowEIO3: true // false by default
+  });
 const clients = {};
 
 io.on('connection', (socket) => {
