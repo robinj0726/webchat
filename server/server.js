@@ -23,9 +23,10 @@ io.on('connection', (socket) => {
     console.log(`${socket.id} connected`);
     socket.on('disconnect', () => {
         console.log(`${socket.id} disconnect`);
+        const roomId = socket.roomId;
+
         socket.leave();
 
-        const roomId = socket.roomId;
         const room = io.sockets.adapter.rooms.get(roomId);
         if (room) {
             console.log(`total users ${room.size} in ${socket.roomId}`);
@@ -42,7 +43,13 @@ io.on('connection', (socket) => {
         socket.roomId = roomId;
 
         socket.join(roomId);
-        io.in(roomId).emit('user:joined', socket.id);
+        io.in(roomId).emit('user:joined', {
+            "id" : socket.id,
+            "iceServers": [{
+                // urls: 'stun:stun.l.google.com:19302'
+                urls: "stun:openrelay.metered.ca:80"
+            }]
+        });
 
         const numClients = io.sockets.adapter.rooms.get(roomId).size;
         console.log(`total users ${numClients} in ${roomId}`);
@@ -55,8 +62,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('user:rtc:ready', roomId => {
-        socket.broadcast.to(roomId).emit('user:rtc:ready', socket.id);
+    socket.on('user:rtc:ready', () => {
+        socket.broadcast.to(socket.roomId).emit('user:rtc:ready', socket.id);
     });
 
     socket.on('user:rtc:start', id => {

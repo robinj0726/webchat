@@ -3,12 +3,7 @@
 import io from 'socket.io-client';
 import callerState from "../store/callerState";
 
-const configuration = {
-  iceServers: [{
-    // urls: 'stun:stun.l.google.com:19302'
-    urls: "stun:openrelay.metered.ca:80"
-  }]
-};
+const configuration = {};
 
 const socket = io({ autoConnect: false })
 const peers = {}
@@ -36,8 +31,9 @@ export function NewCallController() {
   socket.open();
   
   // when a user joins the server
-  socket.on('user:joined', id => {
+  socket.on('user:joined', ({ id, iceServers }) => {
     console.log(`user ${id} joined`);
+    configuration.iceServers = iceServers
   });
 
   // when a user leaves
@@ -200,7 +196,7 @@ export function OpenLocalMedia(options) {
     localVideo.srcObject = stream;
     localVideo.muted = true;
 
-    socket.emit('user:rtc:ready', room);
+    socket.emit('user:rtc:ready');
   })
   .catch(err => console.log(err))
 }
