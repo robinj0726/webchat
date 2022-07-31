@@ -36,7 +36,7 @@ export function NewCallController() {
   socket.open();
   
   // when a user joins the server
-  socket.on('user:join', id => {
+  socket.on('user:joined', id => {
     console.log(`user ${id} joined`);
   });
 
