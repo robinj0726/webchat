@@ -18,7 +18,6 @@ const server = require('https').createServer(httpsOptions, app.callback());
 const io = require('socket.io')(server, {
     allowEIO3: true // false by default
   });
-const clients = {};
 
 io.on('connection', (socket) => {
     console.log(`${socket.id} connected`);
@@ -26,30 +25,24 @@ io.on('connection', (socket) => {
         console.log(`${socket.id} disconnect`);
         socket.leave();
 
-        const client = clients[socket.id];
-        if (!client) return;
-        
-
-        const room = io.sockets.adapter.rooms.get(client.roomId);
+        const roomId = socket.roomId;
+        const room = io.sockets.adapter.rooms.get(roomId);
         if (room) {
-            console.log(`total users ${room.size} in ${client.roomId}`);
+            console.log(`total users ${room.size} in ${socket.roomId}`);
 
-            socket.broadcast.to(client.roomId).emit('user:leave', socket.id)    
+            socket.broadcast.to(socket.roomId).emit('user:leave', socket.id)    
         } else {
-            console.log(`room ${client.roomId} is empty`);
+            console.log(`room ${socket.roomId} is empty`);
         }
         
-        delete clients[socket.id];
     });
 
     socket.on('user:join', (roomId, callback) => {
         console.log(`${socket.id} joined ${roomId}`);
-        clients[socket.id] = {
-            'roomId': roomId
-        };
+        socket.roomId = roomId;
 
         socket.join(roomId);
-        socket.broadcast.to(roomId).emit('user:join', socket.id);
+        io.in(roomId).emit('user:joined', socket.id);
 
         const numClients = io.sockets.adapter.rooms.get(roomId).size;
         console.log(`total users ${numClients} in ${roomId}`);
